@@ -1,0 +1,1032 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Management - Firebase Edition</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <style>
+        /* --- RESET & BASE --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+
+        :root {
+            --primary: #2f3576;
+            --success: #2ec4b6;
+            --pending: #f39c12;
+            --danger: #ff5a8a;
+            --dark: #212529;
+        }
+
+        body {
+            background: linear-gradient(135deg, #eef2ff, #f6f9ff);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--primary);
+            padding: 12px 20px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1100;
+        }
+
+        .logo span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .menu-btn {
+            cursor: pointer;
+            font-size: 24px;
+            padding: 5px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 240px;
+            height: 100vh;
+            background: var(--dark);
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding-top: 80px;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar h4 {
+            padding: 0 20px 10px;
+            color: #adb5bd;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar ul li {
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #ced4da;
+            font-size: 14px;
+        }
+
+        .sidebar ul li:hover,
+        .sidebar ul li.active {
+            background: #343a40;
+            color: #ffd700;
+            border-left: 4px solid #ffd700;
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: 240px;
+            padding: 30px 20px;
+            transition: 0.3s;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .active-section {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            border-left: 4px solid #ffd700;
+            padding-left: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* --- INPUTS --- */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        .add-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* --- TABLES --- */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: var(--primary);
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .status-pending { background: #fff4e5; color: var(--pending); }
+        .status-completed { background: #e6fffa; color: var(--success); }
+
+        .action-btns { display: flex; gap: 8px; }
+        .complete-btn { background: var(--success); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .delete-btn { background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show-sidebar { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 15px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo"><span>TASK</span>MANAGER</div>
+        <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <h4>Core Modules</h4>
+        <ul id="sidebarList">
+            <li id="li-TASK1" onclick="showSection('TASK1')" class="active">CLASS TASK</li>
+            <li id="li-library" onclick="showSection('library')">LIBRARY</li>
+            <li id="li-assignment" onclick="showSection('assignment')">ASSIGNMENT</li>
+            <li id="li-daily" onclick="showSection('daily')">DAILY TASKS</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div id="TASK1" class="content-section active-section">
+            <div class="card-container">
+                <h3>Assign New Class Task</h3>
+                <div class="input-group">
+                    <input type="text" id="regno" placeholder="Reg No (e.g. 501)" onkeyup="findStudent('regno', 'name')">
+                    <input type="text" id="name" placeholder="Student Name" readonly style="background: #f8f9fa;">
+                    <input type="text" id="taskDesc" placeholder="Task Description">
+                    <button class="add-btn" onclick="createTask()">Assign Task</button>
+                </div>
+            </div>
+            <div class="card-container">
+                <h3>Current Task List</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Name</th>
+                                <th>Task</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+      
+
+
+          <div id="library" class="content-section">
+        <div class="card-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: #2f3576; border-left: 4px solid #ffd700; padding-left: 10px;">Verification Dashboard</h3>
+                <button class="delete-btn" onclick="clearLibraryData()">Clear All Records</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Reg No</th>
+                            <th>Date</th>
+                            <th>Topic</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTable">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+        <div id="assignment" class="content-section">
+            <div class="card-container">
+                <h3>Create New Assignment</h3>
+                <div class="input-group">
+                    <input type="text" id="assignReg" placeholder="Reg No" onkeyup="findStudent('assignReg', 'assignName')">
+                    <input type="text" id="assignName" placeholder="Student Name" readonly style="background: #f8f9fa;">
+                    <input type="text" id="assignTitle" placeholder="Assignment Title">
+                    <input type="date" id="assignDate">
+                    <button class="add-btn" onclick="createAssignment()">Create Assignment</button>
+                </div>
+            </div>
+            <div class="card-container">
+                <h3>Assignment Tracking</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Student</th>
+                                <th>Assignment</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="daily" class="content-section">
+            <div class="card-container">
+                <h3>Daily Tasks</h3>
+                <p>Coming Soon...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCe1M54WqCI622ol-4tnZ_RnvZs2I1O0Fk",
+            authDomain: "data-b4764.firebaseapp.com",
+            databaseURL: "https://data-b4764-default-rtdb.firebaseio.com",
+            projectId: "data-b4764",
+            storageBucket: "data-b4764.firebasestorage.app",
+            messagingSenderId: "168891754419",
+            appId: "1:168891754419:web:433f0e3eedb50f1ba7cdc6"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- STUDENT DATA ---
+        const studentData = [
+            { regno: "24uca501", name: "Pio Dharashini" }, { regno: "24uca502", name: "Joyal Raja" },
+            { regno: "24uca503", name: "Krithiga" }, { regno: "24uca504", name: "Joe" },
+            { regno: "24uca505", name: "Karthika" }, { regno: "24uca506", name: "Macmilan" },
+            { regno: "24uca508", name: "Nivedha" }, { regno: "24uca510", name: "Muthu Selvi" },
+            { regno: "24uca511", name: "Thiruchelvam" }, { regno: "24uca512", name: "Pon Sakthi Vel" },
+            { regno: "24uca513", name: "Ajune" }, { regno: "24uca514", name: "Unisha" },
+            { regno: "24uca516", name: "Isaivani" }, { regno: "24uca517", name: "Peniyanin Pranklin" },
+            { regno: "24uca518", name: "Jeyashree" }, { regno: "24uca519", name: "Jemila" },
+            { regno: "24uca520", name: "Jenish" }, { regno: "24uca521", name: "Prince" },
+            { regno: "24uca522", name: "selva Lavanya" }, { regno: "24uca523", name: "Selva Suriya" },
+            { regno: "24uca524", name: "Krishna Bharath" }, { regno: "24uca525", name: "Mohammed Uwais" },
+            { regno: "24uca526", name: "Vasudeva" }, { regno: "24uca527", name: "Dinesh Kumar" },
+            { regno: "24uca528", name: "Mayandi" }, { regno: "24uca529", name: "Melvin Jose" },
+            { regno: "24uca530", name: "Gomathi" }, { regno: "24uca531", name: "Muthuvel" },
+            { regno: "24uca532", name: "Ruban" }, { regno: "24uca533", name: "Mahima" },
+            { regno: "24uca534", name: "Heartina Rayan" }, { regno: "24uca535", name: "Lakshmanan" },
+            { regno: "24uca536", name: "Arokiya Infant Jeroline" }, { regno: "24uca537", name: "Aswin" },
+            { regno: "24uca538", name: "Mithush" }, { regno: "24uca539", name: "Derisha Menaza" },
+            { regno: "24uca540", name: "Kavidarss Beniyamin" }, { regno: "24uca541", name: "Pushpa Raj" },
+            { regno: "24uca542", name: "Akash" }, { regno: "24uca543", name: "Harshini" },
+            { regno: "24uca544", name: "Jegan Akash" }, { regno: "24uca545", name: "Jegadeesh" },
+            { regno: "24uca546", name: "Devadharshini" }, { regno: "24uca547", name: "Hari Priya" },
+            { regno: "24uca548", name: "Kavimari" }, { regno: "24uca549", name: "Ranjani" },
+            { regno: "24uca550", name: "Irudhaya Jolina Bhaiva" }, { regno: "24uca551", name: "Dheepika" },
+            { regno: "24uca553", name: "kowsalya" }, { regno: "24uca554", name: "Dyaku" },
+            { regno: "24uca555", name: "Bhuvaneshwaran" }
+        ];
+
+        // --- UI UTILS ---
+        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("show-sidebar"); }
+        
+        function showSection(id) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active-section'));
+            document.getElementById(id).classList.add('active-section');
+            document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+            document.getElementById('li-' + id).classList.add('active');
+            if (window.innerWidth < 992) toggleSidebar();
+        }
+
+        function findStudent(inputId, nameId) {
+            let reg = document.getElementById(inputId).value.trim().toLowerCase();
+            let student = studentData.find(s => s.regno.toLowerCase().includes(reg) && reg.length > 2);
+            document.getElementById(nameId).value = student ? student.name : "";
+        }
+
+        // --- FIREBASE CLASS TASKS ---
+        function createTask() {
+            let reg = document.getElementById("regno").value.toUpperCase();
+            let name = document.getElementById("name").value;
+            let task = document.getElementById("taskDesc").value;
+            if (!name || !task) return alert("Valid Reg No & Task required");
+            
+            db.ref('tasks').push({ reg, name, task, status: "Pending" });
+            document.getElementById("taskDesc").value = "";
+        }
+
+        db.ref('tasks').on('value', (snap) => {
+            let tasks = snap.val();
+            let html = "";
+            for(let id in tasks) {
+                let t = tasks[id];
+                html += `<tr><td>${t.reg}</td><td>${t.name}</td><td>${t.task}</td>
+                <td><span class="status-pill ${t.status == 'Completed' ? 'status-completed' : 'status-pending'}">${t.status}</span></td>
+                <td class="action-btns"><button class="complete-btn" onclick="updTask('${id}')">✔</button><button class="delete-btn" onclick="delTask('${id}')">✖</button></td></tr>`;
+            }
+            document.getElementById("taskBody").innerHTML = html;
+        });
+
+        function updTask(id) { db.ref('tasks/' + id).update({ status: "Completed" }); }
+        function delTask(id) { if(confirm("Delete?")) db.ref('tasks/' + id).remove(); }
+
+        // --- FIREBASE ASSIGNMENTS ---
+        function createAssignment() {
+            let reg = document.getElementById("assignReg").value.toUpperCase();
+            let name = document.getElementById("assignName").value;
+            let title = document.getElementById("assignTitle").value;
+            let date = document.getElementById("assignDate").value;
+            if (!name || !title || !date) return alert("Fill all fields!");
+            
+            db.ref('assignments').push({ reg, name, title, date, status: "Pending" });
+        }
+
+        db.ref('assignments').on('value', (snap) => {
+            let data = snap.val();
+            let html = "";
+            for(let id in data) {
+                let t = data[id];
+                html += `<tr><td>${t.reg}</td><td>${t.name}</td><td>${t.title}</td><td>${t.date}</td>
+                <td><span class="status-pill ${t.status == 'Submitted' ? 'status-completed' : 'status-pending'}">${t.status}</span></td>
+                <td class="action-btns"><button class="complete-btn" onclick="updAssign('${id}')">✔</button><button class="delete-btn" onclick="delAssign('${id}')">✖</button></td></tr>`;
+            }
+            document.getElementById("assignBody").innerHTML = html;
+        });
+
+        function updAssign(id) { db.ref('assignments/' + id).update({ status: "Submitted" }); }
+        function delAssign(id) { if(confirm("Delete?")) db.ref('assignments/' + id).remove(); }
+
+        // --- FIREBASE LIBRARY ---
+        db.ref('shared_tasks').on('value', (snap) => {
+            let data = snap.val();
+            let html = "";
+            for(let id in data) {
+                let t = data[id];
+                html += `<tr><td>${t.name}</td><td>${t.reg}</td><td>${t.date}</td><td>${t.topic}</td>
+                <td><span class="status-pill ${t.status == 'Pending' ? 'status-pending' : 'status-completed'}">${t.status}</span></td>
+                <td>${t.status == 'Pending' ? `<button class="complete-btn" onclick="verifyLib('${id}')">Verify</button>` : '✅'}</td></tr>`;
+            }
+            document.getElementById('adminTable').innerHTML = html;
+        });
+
+        function verifyLib(id) { db.ref('shared_tasks/' + id).update({ status: "Verified" }); }
+        function clearLibraryData() { if (confirm("Clear records?")) db.ref('shared_tasks').remove(); }
+
+        window.onload = () => {
+            document.getElementById('assignDate').valueAsDate = new Date();
+        };
+
+
+
+    </script>
+
+    <script>
+        db.ref('shared_tasks').on('value', (snapshot) => {
+            let tableBody = document.getElementById("adminTable");
+            tableBody.innerHTML = ""; 
+            
+            snapshot.forEach((childSnapshot) => {
+                let task = childSnapshot.val();
+                let id = childSnapshot.key;
+                let statusClass = task.status === 'Verified' ? 'status-verified' : 'status-pending';
+                
+                let row = `
+                    <tr>
+                        <td>${task.name}</td>
+                        <td>${task.reg}</td>
+                        <td>${task.date}</td>
+                        <td>${task.topic}</td>
+                        <td><span class="status-badge ${statusClass}">${task.status}</span></td>
+                        <td>
+                            <button onclick="updateStatus('${id}', 'Verified')" style="background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Verify</button>
+                            <button onclick="deleteTask('${id}')" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        });
+
+        function updateStatus(id, newStatus) {
+            db.ref('shared_tasks/' + id).update({ status: newStatus });
+        }
+
+        function deleteTask(id) {
+            if(confirm("Delete this submission?")) {
+                db.ref('shared_tasks/' + id).remove();
+            }
+        }
+
+        function clearLibraryData() {
+            if(confirm("Are you sure you want to delete ALL data? This cannot be undone.")) {
+                db.ref('shared_tasks').remove();
+            }
+        }
+
+        // Set default date to today
+        window.onload = () => {
+            document.getElementById('student_date').valueAsDate = new Date();
+        };
+    </script>
+</body>
+</html> -->
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Management - Firebase Edition</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <style>
+        /* --- RESET & BASE --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+
+        :root {
+            --primary: #2f3576;
+            --success: #2ec4b6;
+            --pending: #f39c12;
+            --danger: #ff5a8a;
+            --dark: #212529;
+        }
+
+        body {
+            background: linear-gradient(135deg, #eef2ff, #f6f9ff);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* --- HEADER --- */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--primary);
+            padding: 12px 20px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1100;
+        }
+
+        .logo span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .menu-btn {
+            cursor: pointer;
+            font-size: 24px;
+            padding: 5px;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 240px;
+            height: 100vh;
+            background: var(--dark);
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding-top: 80px;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar h4 {
+            padding: 0 20px 10px;
+            color: #adb5bd;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar ul li {
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #ced4da;
+            font-size: 14px;
+        }
+
+        .sidebar ul li:hover,
+        .sidebar ul li.active {
+            background: #343a40;
+            color: #ffd700;
+            border-left: 4px solid #ffd700;
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: 240px;
+            padding: 30px 20px;
+            transition: 0.3s;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .active-section {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            border-left: 4px solid #ffd700;
+            padding-left: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* --- INPUTS --- */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        .add-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* --- TABLES --- */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: var(--primary);
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            font-size: 13px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .status-pending { background: #fff4e5; color: var(--pending); }
+        .status-completed { background: #e6fffa; color: var(--success); }
+
+        .action-btns { display: flex; gap: 8px; }
+        .complete-btn { background: var(--success); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .delete-btn { background: var(--danger); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+
+        @media (max-width: 992px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show-sidebar { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 15px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo"><span>TASK</span>MANAGER</div>
+        <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <h4>Core Modules</h4>
+        <ul id="sidebarList">
+            <li id="li-TASK1" onclick="showSection('TASK1')" class="active">CLASS TASK</li>
+            <li id="li-library" onclick="showSection('library')">LIBRARY</li>
+            <li id="li-assignment" onclick="showSection('assignment')">ASSIGNMENT</li>
+            <li id="li-daily" onclick="showSection('daily')">DAILY TASKS</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div id="TASK1" class="content-section active-section">
+            <div class="card-container">
+                <h3>Assign New Class Task</h3>
+                <div class="input-group">
+                    <input type="text" id="regno" placeholder="Reg No (e.g. 501)" onkeyup="findStudent('regno', 'name')">
+                    <input type="text" id="name" placeholder="Student Name" readonly style="background: #f8f9fa;">
+                    <input type="text" id="taskDesc" placeholder="Task Description">
+                    <button class="add-btn" onclick="createTask()">Assign Task</button>
+                </div>
+            </div>
+            <div class="card-container">
+                <h3>Current Task List</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Name</th>
+                                <th>Task</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+      
+
+
+          <div id="library" class="content-section">
+        <div class="card-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: #2f3576; border-left: 4px solid #ffd700; padding-left: 10px;">Verification Dashboard</h3>
+                <button class="delete-btn" onclick="clearLibraryData()">Clear All Records</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Reg No</th>
+                            <th>Date</th>
+                            <th>Topic</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTable">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+        <div id="assignment" class="content-section">
+            <div class="card-container">
+                <h3>Create New Assignment</h3>
+                <div class="input-group">
+                    <input type="text" id="assignReg" placeholder="Reg No" onkeyup="findStudent('assignReg', 'assignName')">
+                    <input type="text" id="assignName" placeholder="Student Name" readonly style="background: #f8f9fa;">
+                    <input type="text" id="assignTitle" placeholder="Assignment Title">
+                    <input type="date" id="assignDate">
+                    <button class="add-btn" onclick="createAssignment()">Create Assignment</button>
+                </div>
+            </div>
+            <div class="card-container">
+                <h3>Assignment Tracking</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Student</th>
+                                <th>Assignment</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="daily" class="content-section">
+            <div class="card-container">
+                <h3>Daily Tasks</h3>
+                <p>Coming Soon...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCe1M54WqCI622ol-4tnZ_RnvZs2I1O0Fk",
+            authDomain: "data-b4764.firebaseapp.com",
+            databaseURL: "https://data-b4764-default-rtdb.firebaseio.com",
+            projectId: "data-b4764",
+            storageBucket: "data-b4764.firebasestorage.app",
+            messagingSenderId: "168891754419",
+            appId: "1:168891754419:web:433f0e3eedb50f1ba7cdc6"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- STUDENT DATA ---
+        const studentData = [
+            { regno: "24uca501", name: "Pio Dharashini" }, { regno: "24uca502", name: "Joyal Raja" },
+            { regno: "24uca503", name: "Krithiga" }, { regno: "24uca504", name: "Joe" },
+            { regno: "24uca505", name: "Karthika" }, { regno: "24uca506", name: "Macmilan" },
+            { regno: "24uca508", name: "Nivedha" }, { regno: "24uca510", name: "Muthu Selvi" },
+            { regno: "24uca511", name: "Thiruchelvam" }, { regno: "24uca512", name: "Pon Sakthi Vel" },
+            { regno: "24uca513", name: "Ajune" }, { regno: "24uca514", name: "Unisha" },
+            { regno: "24uca516", name: "Isaivani" }, { regno: "24uca517", name: "Peniyanin Pranklin" },
+            { regno: "24uca518", name: "Jeyashree" }, { regno: "24uca519", name: "Jemila" },
+            { regno: "24uca520", name: "Jenish" }, { regno: "24uca521", name: "Prince" },
+            { regno: "24uca522", name: "selva Lavanya" }, { regno: "24uca523", name: "Selva Suriya" },
+            { regno: "24uca524", name: "Krishna Bharath" }, { regno: "24uca525", name: "Mohammed Uwais" },
+            { regno: "24uca526", name: "Vasudeva" }, { regno: "24uca527", name: "Dinesh Kumar" },
+            { regno: "24uca528", name: "Mayandi" }, { regno: "24uca529", name: "Melvin Jose" },
+            { regno: "24uca530", name: "Gomathi" }, { regno: "24uca531", name: "Muthuvel" },
+            { regno: "24uca532", name: "Ruban" }, { regno: "24uca533", name: "Mahima" },
+            { regno: "24uca534", name: "Heartina Rayan" }, { regno: "24uca535", name: "Lakshmanan" },
+            { regno: "24uca536", name: "Arokiya Infant Jeroline" }, { regno: "24uca537", name: "Aswin" },
+            { regno: "24uca538", name: "Mithush" }, { regno: "24uca539", name: "Derisha Menaza" },
+            { regno: "24uca540", name: "Kavidarss Beniyamin" }, { regno: "24uca541", name: "Pushpa Raj" },
+            { regno: "24uca542", name: "Akash" }, { regno: "24uca543", name: "Harshini" },
+            { regno: "24uca544", name: "Jegan Akash" }, { regno: "24uca545", name: "Jegadeesh" },
+            { regno: "24uca546", name: "Devadharshini" }, { regno: "24uca547", name: "Hari Priya" },
+            { regno: "24uca548", name: "Kavimari" }, { regno: "24uca549", name: "Ranjani" },
+            { regno: "24uca550", name: "Irudhaya Jolina Bhaiva" }, { regno: "24uca551", name: "Dheepika" },
+            { regno: "24uca553", name: "kowsalya" }, { regno: "24uca554", name: "Dyaku" },
+            { regno: "24uca555", name: "Bhuvaneshwaran" }
+        ];
+
+        // --- UI UTILS ---
+        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("show-sidebar"); }
+        
+        function showSection(id) {
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active-section'));
+            document.getElementById(id).classList.add('active-section');
+            document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+            document.getElementById('li-' + id).classList.add('active');
+            if (window.innerWidth < 992) toggleSidebar();
+        }
+
+        function findStudent(inputId, nameId) {
+            let reg = document.getElementById(inputId).value.trim().toLowerCase();
+            let student = studentData.find(s => s.regno.toLowerCase().includes(reg) && reg.length > 2);
+            document.getElementById(nameId).value = student ? student.name : "";
+        }
+
+        // --- FIREBASE CLASS TASKS ---
+        function createTask() {
+            let reg = document.getElementById("regno").value.toUpperCase();
+            let name = document.getElementById("name").value;
+            let task = document.getElementById("taskDesc").value;
+            if (!name || !task) return alert("Valid Reg No & Task required");
+            
+            db.ref('tasks').push({ reg, name, task, status: "Pending" });
+            document.getElementById("taskDesc").value = "";
+        }
+
+        db.ref('tasks').on('value', (snap) => {
+            let tasks = snap.val();
+            let html = "";
+            for(let id in tasks) {
+                let t = tasks[id];
+                html += `<tr><td>${t.reg}</td><td>${t.name}</td><td>${t.task}</td>
+                <td><span class="status-pill ${t.status == 'Completed' ? 'status-completed' : 'status-pending'}">${t.status}</span></td>
+                <td class="action-btns"><button class="complete-btn" onclick="updTask('${id}')">✔</button><button class="delete-btn" onclick="delTask('${id}')">✖</button></td></tr>`;
+            }
+            document.getElementById("taskBody").innerHTML = html;
+        });
+
+        function updTask(id) { db.ref('tasks/' + id).update({ status: "Completed" }); }
+        function delTask(id) { if(confirm("Delete?")) db.ref('tasks/' + id).remove(); }
+
+        // --- FIREBASE ASSIGNMENTS ---
+        function createAssignment() {
+            let reg = document.getElementById("assignReg").value.toUpperCase();
+            let name = document.getElementById("assignName").value;
+            let title = document.getElementById("assignTitle").value;
+            let date = document.getElementById("assignDate").value;
+            if (!name || !title || !date) return alert("Fill all fields!");
+            
+            db.ref('assignments').push({ reg, name, title, date, status: "Pending" });
+        }
+
+        db.ref('assignments').on('value', (snap) => {
+            let data = snap.val();
+            let html = "";
+            for(let id in data) {
+                let t = data[id];
+                html += `<tr><td>${t.reg}</td><td>${t.name}</td><td>${t.title}</td><td>${t.date}</td>
+                <td><span class="status-pill ${t.status == 'Submitted' ? 'status-completed' : 'status-pending'}">${t.status}</span></td>
+                <td class="action-btns"><button class="complete-btn" onclick="updAssign('${id}')">✔</button><button class="delete-btn" onclick="delAssign('${id}')">✖</button></td></tr>`;
+            }
+            document.getElementById("assignBody").innerHTML = html;
+        });
+
+        function updAssign(id) { db.ref('assignments/' + id).update({ status: "Submitted" }); }
+        function delAssign(id) { if(confirm("Delete?")) db.ref('assignments/' + id).remove(); }
+
+        // --- FIREBASE LIBRARY ---
+        db.ref('shared_tasks').on('value', (snap) => {
+            let data = snap.val();
+            let html = "";
+            for(let id in data) {
+                let t = data[id];
+                html += `<tr><td>${t.name}</td><td>${t.reg}</td><td>${t.date}</td><td>${t.topic}</td>
+                <td><span class="status-pill ${t.status == 'Pending' ? 'status-pending' : 'status-completed'}">${t.status}</span></td>
+                <td>${t.status == 'Pending' ? `<button class="complete-btn" onclick="verifyLib('${id}')">Verify</button>` : '✅'}</td></tr>`;
+            }
+            document.getElementById('adminTable').innerHTML = html;
+        });
+
+        function verifyLib(id) { db.ref('shared_tasks/' + id).update({ status: "Verified" }); }
+        function clearLibraryData() { if (confirm("Clear records?")) db.ref('shared_tasks').remove(); }
+
+        window.onload = () => {
+            document.getElementById('assignDate').valueAsDate = new Date();
+        };
+
+
+
+    </script>
+
+    <script>
+        db.ref('shared_tasks').on('value', (snapshot) => {
+            let tableBody = document.getElementById("adminTable");
+            tableBody.innerHTML = ""; 
+            
+            snapshot.forEach((childSnapshot) => {
+                let task = childSnapshot.val();
+                let id = childSnapshot.key;
+                let statusClass = task.status === 'Verified' ? 'status-verified' : 'status-pending';
+                
+                let row = `
+                    <tr>
+                        <td>${task.name}</td>
+                        <td>${task.reg}</td>
+                        <td>${task.date}</td>
+                        <td>${task.topic}</td>
+                        <td><span class="status-badge ${statusClass}">${task.status}</span></td>
+                        <td>
+                            <button onclick="updateStatus('${id}', 'Verified')" style="background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Verify</button>
+                            <button onclick="deleteTask('${id}')" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px;">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        });
+
+        function updateStatus(id, newStatus) {
+            db.ref('shared_tasks/' + id).update({ status: newStatus });
+        }
+
+        function deleteTask(id) {
+            if(confirm("Delete this submission?")) {
+                db.ref('shared_tasks/' + id).remove();
+            }
+        }
+
+        function clearLibraryData() {
+            if(confirm("Are you sure you want to delete ALL data? This cannot be undone.")) {
+                db.ref('shared_tasks').remove();
+            }
+        }
+
+        // Set default date to today
+        window.onload = () => {
+            document.getElementById('student_date').valueAsDate = new Date();
+        };
+    </script>
+</body>
+</html>

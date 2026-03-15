@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Management - Admin Login</title>
+    
+    <style>
+        /* --- RESET & BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Segoe UI", Tahoma, sans-serif; }
+        :root { --primary: #2f3576; --danger: #ff5a8a; }
+        body { background: var(--primary); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+        /* --- LOGIN BOX --- */
+        .login-box {
+            background: white; padding: 40px; border-radius: 12px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 90%; max-width: 400px;
+        }
+        .login-box h2 { color: var(--primary); margin-bottom: 20px; }
+        .login-box input { 
+            margin-bottom: 15px; text-align: center; font-size: 18px; 
+            letter-spacing: 5px; width: 100%; padding: 12px; 
+            border: 1px solid #ddd; border-radius: 6px; 
+        }
+        .add-btn { 
+            background: var(--primary); color: white; border: none; 
+            padding: 12px; border-radius: 6px; cursor: pointer; 
+            font-weight: bold; width: 100%; font-size: 16px;
+        }
+        .add-btn:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2>Admin Login</h2>
+        <input type="password" id="adminPass" placeholder="••••" onkeypress="handleKeyPress(event)">
+        <button class="add-btn" onclick="checkPassword()">Unlock Dashboard</button>
+        <p id="loginError" style="color: var(--danger); margin-top: 10px; display: none;">Incorrect Password</p>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = "555"; 
+
+        function checkPassword() {
+            const input = document.getElementById("adminPass").value;
+            const errorMsg = document.getElementById("loginError");
+
+            if (input === ADMIN_PASSWORD) {
+                // If password is correct, redirect to Task2.html
+                window.location.href = "Task2.html";
+            } else {
+                // Show error message and clear input
+                errorMsg.style.display = "block";
+                document.getElementById("adminPass").value = "";
+                document.getElementById("adminPass").focus();
+            }
+        }
+
+        // Helper to allow login with the Enter key
+        function handleKeyPress(e) {
+            if (e.key === "Enter") {
+                checkPassword();
+            }
+        }
+    </script>
+</body>
+</html>

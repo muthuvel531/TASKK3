@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - St. Xavier's</title>
+    <style>
+        :root {
+            --primary: #2f3576;
+            --success: #2ec4b6;
+            --pending: #f39c12;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            color: var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background: #eef2ff;
+            color: var(--primary);
+            padding: 15px;
+            text-align: left;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-pending {
+            background: #fff4e5;
+            color: var(--pending);
+        }
+
+        .badge-verified {
+            background: #e7faf8;
+            color: var(--success);
+        }
+
+        .v-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .v-btn:hover {
+            opacity: 0.8;
+        }
+
+        .clear-btn {
+            font-size: 14px;
+            background: #ff5a8a;
+            color: white;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>
+            Verification Dashboard
+            <button class="clear-btn" onclick="clearAll()">Clear All Data</button>
+        </h1>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Reg. No</th>
+                    <th>Date</th>
+                    <th>Topic</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="adminTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        function loadTasks() {
+            const table = document.getElementById('adminTable');
+            const tasks = JSON.parse(localStorage.getItem('shared_tasks')) || [];
+            table.innerHTML = "";
+
+            tasks.forEach(task => {
+                table.innerHTML += `
+                <tr>
+                    <td><b>${task.name}</b></td>
+                    <td>${task.reg}</td>
+                    <td>${task.date}</td>
+                    <td>${task.topic}</td>
+                    <td>
+                        <span class="badge ${task.status === 'Pending' ? 'badge-pending' : 'badge-verified'}">
+                            ${task.status}
+                        </span>
+                    </td>
+                    <td>
+                        ${task.status === 'Pending' ?
+                        `<button class="v-btn" onclick="verify(${task.id})">Confirm & Verify</button>` :
+                        '✅ Done'}
+                    </td>
+                </tr>
+            `;
+            });
+        }
+
+        function verify(id) {
+            let tasks = JSON.parse(localStorage.getItem('shared_tasks'));
+            let index = tasks.findIndex(t => t.id === id);
+            tasks[index].status = "Verified";
+            localStorage.setItem('shared_tasks', JSON.stringify(tasks));
+            loadTasks(); // Refresh
+        }
+
+        function clearAll() {
+            if (confirm("Delete all student records?")) {
+                localStorage.removeItem('shared_tasks');
+                loadTasks();
+            }
+        }
+
+        // Refresh data every 2 seconds automatically
+        setInterval(loadTasks, 2000);
+        loadTasks();
+    </script>
+</body>
+
+</html>

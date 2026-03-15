@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Management System - Firebase</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Segoe UI", sans-serif;
+        }
+
+        :root {
+            --primary: #2f3576;
+            --accent: #ff5a8a;
+            --success: #4caf50;
+            --danger: #f44336;
+            --dark: #212529;
+        }
+
+        body {
+            background: #f6f9ff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--primary);
+            color: white;
+            padding: 15px 30px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .logo span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .menu-btn {
+            display: none;
+            cursor: pointer;
+            font-size: 22px;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 240px;
+            height: 100vh;
+            background: var(--dark);
+            color: white;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding-top: 80px;
+            transition: 0.3s;
+        }
+
+        .sidebar h4 {
+            padding: 0 20px 10px;
+            font-size: 11px;
+            color: #adb5bd;
+        }
+
+        .sidebar ul li {
+            list-style: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            color: #ced4da;
+        }
+
+        .sidebar ul li:hover,
+        .sidebar ul li.active {
+            background: #343a40;
+            color: #ffd700;
+            border-left: 4px solid #ffd700;
+        }
+
+        /* MAIN */
+        .main-container {
+            margin-left: 240px;
+            margin-top: 70px;
+            padding: 30px;
+            width: calc(100% - 240px);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .active-section {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            border-left: 4px solid #ffd700;
+            padding-left: 10px;
+        }
+
+        /* FORM */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        /* BUTTON */
+        .btn {
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent);
+        }
+
+        .btn-clear {
+            background: #6c757d;
+            float: right;
+            margin-bottom: 10px;
+        }
+
+        .btn-verify {
+            background: var(--success);
+            padding: 5px 10px;
+            font-size: 11px;
+        }
+
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            color: var(--primary);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background: #fff4e5;
+            color: #ff9800;
+        }
+
+        .status-completed {
+            background: #e6fffa;
+            color: #38b2ac;
+        }
+
+        .search-box {
+            padding: 8px;
+            width: 250px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        /* MOBILE */
+        @media(max-width: 992px) {
+            .menu-btn {
+                display: block;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 1001;
+            }
+
+            .sidebar.show-sidebar {
+                transform: translateX(0);
+            }
+
+            .main-container {
+                margin-left: 0;
+                width: 100%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo"><span>TASK</span> MANAGER</div>
+        <div class="menu-btn" onclick="toggleSidebar()">☰</div>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <h4>Core Modules</h4>
+        <ul>
+            <li class="nav-item active" onclick="showSection('admin',this)">ADMIN DASHBOARD</li>
+            <li class="nav-item" onclick="showSection('student',this)">STUDENT SUBMISSION</li>
+            <li class="nav-item" onclick="showSection('assignment',this)">ASSIGNMENTS</li>
+            <li class="nav-item" onclick="showSection('daily',this)">DAILY TASKS</li>
+        </ul>
+    </div>
+
+    <div class="main-container">
+
+        <div id="admin" class="content-section active-section">
+            <div class="card">
+                <button class="btn btn-clear" onclick="clearAllData()">Clear All Data</button>
+                <h3>Admin Dashboard</h3>
+                <input type="text" id="adminSearch" class="search-box" placeholder="Search Reg No" onkeyup="filterTasks()">
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Name</th>
+                                <th>Task</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTaskTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+<div id="student" class="content-section">
+        <div class="card" style="max-width:500px; margin:auto;">
+            <h3 style="color: #2f3576; border-left: 4px solid #ffd700; padding-left: 10px; margin-bottom: 20px;">Student Submission</h3>
+            
+            <div class="form-group">
+                <label>Registration Number</label>
+                <input type="text" id="student_reg" placeholder="e.g. 501" onkeyup="autoFillStudent()">
+            </div>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="student_name" readonly placeholder="Auto-filled from Reg No">
+            </div>
+
+            <div class="form-group">
+                <label>Submission Date</label>
+                <input type="date" id="student_date">
+            </div>
+
+            <div class="form-group">
+                <label>Topic / Task</label>
+                <input type="text" id="student_topic" placeholder="Enter topic name">
+            </div>
+
+            <button class="btn btn-primary" onclick="submitToLibrary()">Submit Task</button>
+            <p id="msg" style="text-align:center; margin-top:15px;"></p>
+        </div>
+    </div>
+       
+
+        <div id="assignment" class="content-section">
+            <div class="card">
+                <h3>Assignment Tracking</h3>
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Reg No</th>
+                                <th>Name</th>
+                                <th>Assignment</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="daily" class="content-section">
+            <div class="card">
+                <h3>Daily Tasks</h3>
+                <p>Daily goal module coming soon...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCe1M54WqCI622ol-4tnZ_RnvZs2I1O0Fk",
+            authDomain: "data-b4764.firebaseapp.com",
+            databaseURL: "https://data-b4764-default-rtdb.firebaseio.com",
+            projectId: "data-b4764",
+            storageBucket: "data-b4764.firebasestorage.app",
+            messagingSenderId: "168891754419",
+            appId: "1:168891754419:web:433f0e3eedb50f1ba7cdc6"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // --- UI LOGIC ---
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("show-sidebar");
+        }
+
+        function showSection(id, el) {
+            document.querySelectorAll(".content-section").forEach(sec => sec.classList.remove("active-section"));
+            document.getElementById(id).classList.add("active-section");
+            document.querySelectorAll(".nav-item").forEach(li => li.classList.remove("active"));
+            el.classList.add("active");
+            if (window.innerWidth < 992) toggleSidebar();
+        }
+
+        // --- STUDENT SUBMISSION (Writes to Firebase) ---
+        function submitTask() {
+            let name = document.getElementById("student_name").value.trim();
+            let reg = document.getElementById("student_reg").value.trim().toUpperCase();
+            let date = document.getElementById("student_date").value;
+            let topic = document.getElementById("student_topic").value.trim();
+
+            if (!name || !reg || !date || !topic) {
+                alert("Please fill all fields");
+                return;
+            }
+
+            // Reference to 'tasks' node in Firebase
+            db.ref('tasks').push({
+                reg: reg,
+                name: name,
+                date: date,
+                topic: topic,
+                status: "Pending"
+            }).then(() => {
+                document.getElementById("msg").innerText = "Submitted Successfully";
+                // Reset fields
+                document.getElementById("student_name").value = "";
+                document.getElementById("student_reg").value = "";
+                document.getElementById("student_topic").value = "";
+                setTimeout(() => { document.getElementById("msg").innerText = ""; }, 3000);
+            });
+        }
+
+        // --- ADMIN DASHBOARD (Reads from Firebase in real-time) ---
+        db.ref('tasks').on('value', (snapshot) => {
+            const data = snapshot.val();
+            let html = "";
+            if (data) {
+                for (let key in data) {
+                    let t = data[key];
+                    html += `
+                    <tr>
+                        <td>${t.reg}</td>
+                        <td>${t.name}</td>
+                        <td>${t.topic}</td>
+                        <td>
+                            <span class="status-pill ${t.status === "Verified" ? "status-completed" : "status-pending"}">
+                                ${t.status}
+                            </span>
+                        </td>
+                        <td>
+                            ${t.status === "Pending" ? `<button class="btn btn-verify" onclick="verifyTask('${key}')">Verify</button>` : '✅'}
+                        </td>
+                    </tr>`;
+                }
+            } else {
+                html = "<tr><td colspan='5'>No Tasks Found</td></tr>";
+            }
+            document.getElementById("adminTaskTable").innerHTML = html;
+        });
+
+        // --- UPDATE TASK STATUS ---
+        function verifyTask(key) {
+            db.ref('tasks/' + key).update({ status: "Verified" });
+        }
+
+        // --- CLEAR DATA ---
+        function clearAllData() {
+            if (confirm("Delete all records from the cloud?")) {
+                db.ref('tasks').remove();
+            }
+        }
+
+        // --- SEARCH FILTER ---
+        function filterTasks() {
+            let val = document.getElementById("adminSearch").value.toUpperCase();
+            let rows = document.querySelectorAll("#adminTaskTable tr");
+            rows.forEach(r => {
+                let txt = r.children[0].innerText;
+                r.style.display = txt.toUpperCase().includes(val) ? "" : "none";
+            });
+        }
+
+        // --- ASSIGNMENTS (Real-time) ---
+        db.ref('assignments').on('value', (snapshot) => {
+            const data = snapshot.val();
+            let html = "";
+            if (data) {
+                for (let key in data) {
+                    let t = data[key];
+                    html += `
+                    <tr>
+                        <td>${t.reg}</td>
+                        <td>${t.name}</td>
+                        <td>${t.title}</td>
+                        <td>${t.date}</td>
+                        <td><span class="status-pill status-completed">${t.status}</span></td>
+                    </tr>`;
+                }
+            } else {
+                html = "<tr><td colspan='5'>No Assignments assigned yet</td></tr>";
+            }
+            document.getElementById("assignBody").innerHTML = html;
+        });
+
+        window.onload = function() {
+            document.getElementById('student_date').valueAsDate = new Date();
+        }
+    </script>
+
+    <script>
+         const studentData = [
+            { regno: "501", name: "Hariharan" },
+            { regno: "502", name: "Muthuvel" },
+            { regno: "503", name: "Umamaheswari" }
+        ];
+
+        // --- 2. STUDENT FUNCTIONS ---
+        function autoFillStudent() {
+            let regInput = document.getElementById("student_reg").value.trim().toLowerCase();
+            let student = studentData.find(s => s.regno.toLowerCase() === regInput);
+            document.getElementById("student_name").value = student ? student.name : "";
+        }
+
+        function submitToLibrary() {
+            let name = document.getElementById("student_name").value;
+            let reg = document.getElementById("student_reg").value.toUpperCase();
+            let date = document.getElementById("student_date").value;
+            let topic = document.getElementById("student_topic").value.trim();
+
+            if (!name || !topic || !date) {
+                alert("Please ensure Registration Number is valid and all fields are filled.");
+                return;
+            }
+
+            db.ref('shared_tasks').push({
+                name: name,
+                reg: reg,
+                date: date,
+                topic: topic,
+                status: "Pending"
+            }).then(() => {
+                let msg = document.getElementById("msg");
+                msg.innerText = "Task Submitted Successfully!";
+                msg.style.color = "green";
+                // Reset form
+                document.getElementById("student_reg").value = "";
+                document.getElementById("student_name").value = "";
+                document.getElementById("student_topic").value = "";
+                setTimeout(() => { msg.innerText = ""; }, 3000);
+            });
+        }
+    </script>
+</body>
+
+</html>
